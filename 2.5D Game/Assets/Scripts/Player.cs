@@ -1,5 +1,6 @@
 using UnityEngine;
 
+
 public class Player : MonoBehaviour
 {
     //Cache our character controller
@@ -7,18 +8,30 @@ public class Player : MonoBehaviour
     //create some variables for designer friendly movements
     [SerializeField]
     private float _moveSpeed = 3f, _gravity = 1f, _jumpHeight = 15f, _dblJmpHeight;
+    [SerializeField]
+    private UIManager UI_Manager;
 
     //create variable to store changing input values
     [SerializeField]
     private float _horizontalMove, _verticalMove;
     [SerializeField]
     private bool _canDoubleJump = true;
+    [SerializeField]
+    private int coins = 0;
     
     //vector3 variable needed for characterController Move Function
     private Vector2 _movePos;
+
+    //adding player controls
+    PlayerInput _input;
+    float _horizontal;
+
     // Start is called before the first frame update
     void Start()
     {
+        //cache input actions
+        _input = new PlayerInput();
+        _input.Player.Enable();
         //grab Character controller component in Start method and assign it to our variable.
         _charController = GetComponent<CharacterController>();
 
@@ -28,7 +41,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         // grab input from the input class 
-        _horizontalMove = Input.GetAxisRaw("Horizontal");        
+        _horizontalMove = _input.Player.Move.ReadValue<float>();        
         
         //assign a new vector2 to our vector2 
         _movePos = new Vector2(_horizontalMove, 0);
@@ -44,7 +57,7 @@ public class Player : MonoBehaviour
                 _canDoubleJump = true;
             
             //check to see if the space key has been pressed this frame and set the _vertical move to our jump height
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (_input.Player.Jump.WasPressedThisFrame())
             {
                 _verticalMove = _jumpHeight;
             }
@@ -52,7 +65,7 @@ public class Player : MonoBehaviour
         else // else block meaning we aren't on the ground
         {
             
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (_input.Player.Jump.WasPressedThisFrame())
             {
                 if (!_canDoubleJump) return; // return if _candoubleJump is equal to false;
                 _verticalMove += _dblJmpHeight;
@@ -69,5 +82,11 @@ public class Player : MonoBehaviour
         
         //move the controller/player after all the calculations have been made
         _charController.Move(velocity * Time.deltaTime);
+    }
+
+    public void AddCoin(int value)
+    {
+        coins += value;
+        UI_Manager.UpdateText(coins);
     }
 }
