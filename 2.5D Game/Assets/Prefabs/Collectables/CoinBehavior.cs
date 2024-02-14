@@ -8,7 +8,7 @@ public class CoinBehavior : MonoBehaviour
 
         if (player)
         {
-            player.AddCoin(1);
+            player.AddCoin();
             Destroy(gameObject);
         }
 

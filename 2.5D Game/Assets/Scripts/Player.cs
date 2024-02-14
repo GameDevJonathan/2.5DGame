@@ -1,5 +1,6 @@
+using Unity.VisualScripting;
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
 {
@@ -7,20 +8,23 @@ public class Player : MonoBehaviour
     private CharacterController _charController;
     //create some variables for designer friendly movements
     [SerializeField]
-    private float _moveSpeed = 3f, _gravity = 1f, _jumpHeight = 15f, _dblJmpHeight;
+    private float _moveSpeed = 3f, _gravity = 1f, _jumpHeight = 15f, _dblJmpHeight, _frameRate = 1f;
+    
     [SerializeField]
-    private UIManager UI_Manager;
+    private UIManager2 _uiManager;
 
     //create variable to store changing input values
-    [SerializeField]
-    private float _horizontalMove, _verticalMove;
+    private float _horizontalMove, _yVelocity;
     [SerializeField]
     private bool _canDoubleJump = true;
+
     [SerializeField]
-    private int coins = 0;
-    
+    private int coins = 0, _lives = 3;
+
     //vector3 variable needed for characterController Move Function
-    private Vector2 _movePos;
+    private Vector3 _movePos;    
+    private Vector3 velocity;
+
 
     //adding player controls
     PlayerInput _input;
@@ -34,59 +38,86 @@ public class Player : MonoBehaviour
         _input.Player.Enable();
         //grab Character controller component in Start method and assign it to our variable.
         _charController = GetComponent<CharacterController>();
+        _uiManager = GameObject.Find("Canvas").GetComponent<UIManager2>();
+        if (_uiManager == null)
+        {
+            Debug.LogError("The UI Manager is NULL.");
+        }
+
+        _uiManager.UpdateCoinDisplay(coins);
+        _uiManager.UpdateLivesDisplay(_lives);
 
     }
 
     // Update is called once per frame
     void Update()
     {
+        Time.timeScale = _frameRate;
         // grab input from the input class 
-        _horizontalMove = _input.Player.Move.ReadValue<float>();        
-        
-        //assign a new vector2 to our vector2 
-        _movePos = new Vector2(_horizontalMove, 0);
-        
-        //created a vector called velocity for further control. Velocity = Direction * Speed
-        Vector2 velocity = _movePos * _moveSpeed;
+        _horizontalMove = _input.Player.Move.ReadValue<float>();
 
+        //assign a new vector2 to our vector2 
+        _movePos = new Vector3(_horizontalMove, 0, 0);
+        //created a vector called velocity for further control. Velocity = Direction * Speed
+        velocity = _movePos * _moveSpeed;
 
         //Character Controler builtin function to Check to see if the character is standing on ground.
-        if (_charController.isGrounded)
+        if (_charController.isGrounded == true)
         {
+
             if (!_canDoubleJump)
                 _canDoubleJump = true;
-            
+
+
             //check to see if the space key has been pressed this frame and set the _vertical move to our jump height
             if (_input.Player.Jump.WasPressedThisFrame())
             {
-                _verticalMove = _jumpHeight;
+                _yVelocity = _jumpHeight;
             }
         }
         else // else block meaning we aren't on the ground
         {
-            
+
             if (_input.Player.Jump.WasPressedThisFrame())
             {
                 if (!_canDoubleJump) return; // return if _candoubleJump is equal to false;
-                _verticalMove += _dblJmpHeight;
+                _yVelocity = _dblJmpHeight;
                 _canDoubleJump = false;
             }
 
             //if our character isn't on the ground apply gravity
-            _verticalMove -= _gravity;
+            _yVelocity -= _gravity;
         }
-        
         //set the velocity y position after all of the calculations have been made
-        velocity.y = _verticalMove;
+        velocity.y = _yVelocity;
 
-        
+
         //move the controller/player after all the calculations have been made
         _charController.Move(velocity * Time.deltaTime);
-    }
 
-    public void AddCoin(int value)
+
+    }   
+
+
+
+    #region Methods
+
+
+    public void AddCoin(int value = 1)
     {
         coins += value;
-        UI_Manager.UpdateText(coins);
+        _uiManager.UpdateCoinDisplay(coins);
     }
+
+    public void Damage()
+    {
+        _lives--;
+        _uiManager.UpdateLivesDisplay(_lives);
+
+        if(_lives < 1)
+        {
+            SceneManager.LoadScene(0);
+        }
+    }
+    #endregion
 }
